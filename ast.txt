@@ -1,8 +1,10 @@
 ASTNode[
-	 type: Disjunction, left: ASTNode[
+	 type: Implication, left: ASTNode[
 		 type: Variable, value: a 
 	], right: ASTNode[
-		 type: Negation, operand: ASTNode[
+		 type: Implication, left: ASTNode[
+			 type: Variable, value: b 
+		], right: ASTNode[
 			 type: Variable, value: a 
 		] 
 	] 

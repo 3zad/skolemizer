@@ -20,11 +20,10 @@ struct Parser {
     ASTNode* parseBiconditional() {
         ASTNode* left = parseImplication();
 
-        while (check(TokenType.BICONDITIONAL)) {
+        if (check(TokenType.BICONDITIONAL)) {
             consume();
-            ASTNode* right = parseImplication();
-            ASTNode* node  = new ASTNode(NodeType.Biconditional, ""d, left, right);
-            left = node;
+            ASTNode* right = parseBiconditional();
+            return new ASTNode(NodeType.Biconditional, ""d, left, right);
         }
         return left;
     }
@@ -32,11 +31,10 @@ struct Parser {
     ASTNode* parseImplication() {
         ASTNode* left = parseDisjunction();
 
-        while (check(TokenType.IMPLICATION)) {
+        if (check(TokenType.IMPLICATION)) {
             consume();
-            ASTNode* right = parseDisjunction();
-            ASTNode* node  = new ASTNode(NodeType.Implication, ""d, left, right);
-            left = node;
+            ASTNode* right = parseImplication(); // recurse instead of loop
+            return new ASTNode(NodeType.Implication, ""d, left, right);
         }
         return left;
     }
