@@ -1,0 +1,9 @@
+ASTNode[
+	 type: Negation, operand: ASTNode[
+		 type: Disjunction, left: ASTNode[
+			 type: Variable, value: A 
+		], right: ASTNode[
+			 type: Variable, value: B 
+		] 
+	] 
+]

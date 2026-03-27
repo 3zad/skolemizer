@@ -1,0 +1,11 @@
+ASTNode[
+	 type: Conjunction, left: ASTNode[
+		 type: Negation, operand: ASTNode[
+			 type: Variable, value: A 
+		] 
+	], right: ASTNode[
+		 type: Negation, operand: ASTNode[
+			 type: Variable, value: B 
+		] 
+	] 
+]

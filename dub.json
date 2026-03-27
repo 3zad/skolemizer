@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"Zachary A. Davis"
+	],
+	"copyright": "Copyright © 2026, Zachary A. Davis",
+	"description": "A project for the Logic in Computer Science course.",
+	"license": "proprietary",
+	"name": "skolemizer"
+}
