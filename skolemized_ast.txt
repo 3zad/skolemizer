@@ -1,11 +1,9 @@
 ASTNode[
-	 type: Predicate, value: P, args: [
-		ASTNode[
-			 type: Variable, value: x 
-		], ASTNode[
-			 type: Variable, value: y 
-		], ASTNode[
-			 type: Variable, value: z 
-		], 
+	 type: Disjunction, left: ASTNode[
+		 type: Variable, value: a 
+	], right: ASTNode[
+		 type: Negation, operand: ASTNode[
+			 type: Variable, value: a 
+		] 
 	] 
 ]
