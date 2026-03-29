@@ -1,20 +1,20 @@
 ASTNode[
-	 type: Disjunction, left: ASTNode[
-		 type: Negation, operand: ASTNode[
-			 type: Universal, variable: v0, body: ASTNode[
+	 type: Universal, variable: v0, body: ASTNode[
+		 type: Existential, variable: v1, body: ASTNode[
+			 type: Disjunction, left: ASTNode[
+				 type: Negation, operand: ASTNode[
+					 type: Predicate, value: P, args: [
+						ASTNode[
+							 type: Variable, value: v0 
+						], 
+					] 
+				] 
+			], right: ASTNode[
 				 type: Predicate, value: P, args: [
 					ASTNode[
-						 type: Variable, value: v0 
+						 type: Variable, value: v1 
 					], 
 				] 
-			] 
-		] 
-	], right: ASTNode[
-		 type: Existential, variable: v1, body: ASTNode[
-			 type: Predicate, value: P, args: [
-				ASTNode[
-					 type: Variable, value: v1 
-				], 
 			] 
 		] 
 	] 

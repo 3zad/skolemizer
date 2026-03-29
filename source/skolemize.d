@@ -26,8 +26,8 @@ public ASTNode* removeImplication(ASTNode* node)
 {
     if (node is null) return null;
 
-    node.left  = skolemizeNode(node.left);
-    node.right = skolemizeNode(node.right);
+    node.left  = removeImplication(node.left);
+    node.right = removeImplication(node.right);
 
     if (node.type == NodeType.Implication) {
         ASTNode* negated = new ASTNode(NodeType.Negation, ""d, node.left, null);
@@ -43,8 +43,8 @@ public ASTNode* removeBiconditional(ASTNode* node)
 {
     if (node is null) return null;
 
-    node.left  = skolemizeNode(node.left);
-    node.right = skolemizeNode(node.right);
+    node.left  = removeBiconditional(node.left);
+    node.right = removeBiconditional(node.right);
 
     if (node.type == NodeType.Biconditional) {
         ASTNode* leftImplication  = new ASTNode(NodeType.Implication, ""d, node.left, node.right);
@@ -139,14 +139,40 @@ private void replaceVariable(ASTNode* node, dstring oldVar, dstring newVar)
 // Ax(P(x)) > Ey(P(y)) into AxEy(P(x) > P(y))
 private ASTNode* moveQuantifiersToFront(ASTNode* node)
 {
-    if (node is null) return null;
-
-    if (node.type == NodeType.Universal || node.type == NodeType.Existential)
-    {
-        writeln(node.type, " ", node.value);
+    auto quantifiers = extractQuantifiers(node);
+    node = removeQuantifiers(node);
+    foreach (q; quantifiers) {
+        node = new ASTNode(q.type, q.value, node, null);
     }
-
-    return moveQuantifiersToFront(node.left);
-    return moveQuantifiersToFront(node.right);
+    return node;
 }
 
+// helper function which returns a list of quantifiers
+private ASTNode*[] extractQuantifiers(ASTNode* node)
+{
+    if (node is null) return [];
+    ASTNode*[] quantifiers;
+    if (node.type == NodeType.Universal || node.type == NodeType.Existential) {
+        quantifiers ~= node;
+    }
+
+    auto left = extractQuantifiers(node.left);
+    auto right = extractQuantifiers(node.right);
+
+    return  right ~ left  ~ quantifiers;
+}
+
+// helper function which removes all quantifiers from the tree
+private ASTNode* removeQuantifiers(ASTNode* node)
+{
+    if (node is null) return null;
+
+    node.left  = removeQuantifiers(node.left);
+    node.right = removeQuantifiers(node.right);
+
+    if (node.type == NodeType.Universal || node.type == NodeType.Existential) {
+        return node.left; // skip the quantifier
+    } else {
+        return node;
+    }
+}
