@@ -13,10 +13,9 @@ public ASTNode* skolemizeNode(ASTNode* node)
     node = removeImplication(node);
     node = removeBiconditional(node);
     node = negationsInward(node);
-    int x = 0;
-    node = standardizeVariables(node, x);
+    node = standardizeVariables(node);
+    node = moveQuantifiersToFront(node);
     // TODO:
-    // Standardize variables
     // Move quantifiers to the front
     // Eliminate existential quantifiers
     return node;
@@ -94,7 +93,14 @@ public ASTNode* negationsInward(ASTNode* node)
 }
 
 // Ax(P(x)) > Ex(P(x)) into Ax(P(x)) > Ey(P(y))
-public ASTNode* standardizeVariables(ASTNode* node, ref int counter)
+public ASTNode* standardizeVariables(ASTNode* node) 
+{
+    int x = 0;
+    return standardizeVariables(node, x);
+}
+
+// Helper function
+private ASTNode* standardizeVariables(ASTNode* node, ref int counter)
 {
     if (node is null) return null;
 
@@ -113,6 +119,7 @@ public ASTNode* standardizeVariables(ASTNode* node, ref int counter)
     return node;
 }
 
+// Helper function
 private void replaceVariable(ASTNode* node, dstring oldVar, dstring newVar)
 {
     if (node is null) return;
@@ -128,3 +135,18 @@ private void replaceVariable(ASTNode* node, dstring oldVar, dstring newVar)
         replaceVariable(arg, oldVar, newVar);
     }
 }
+
+// Ax(P(x)) > Ey(P(y)) into AxEy(P(x) > P(y))
+private ASTNode* moveQuantifiersToFront(ASTNode* node)
+{
+    if (node is null) return null;
+
+    if (node.type == NodeType.Universal || node.type == NodeType.Existential)
+    {
+        writeln(node.type, " ", node.value);
+    }
+
+    return moveQuantifiersToFront(node.left);
+    return moveQuantifiersToFront(node.right);
+}
+
