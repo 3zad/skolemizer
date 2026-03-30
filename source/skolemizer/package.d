@@ -2,6 +2,8 @@ module skolemizer;
 
 import std.stdio;
 import std.file;
+import std.string;
+import std.algorithm.searching;
 
 public import skolemizer.lexer;
 public import skolemizer.parser;
@@ -141,5 +143,22 @@ dstring toFormulaString(ASTNode* node, dstring result = "")
 		depth++;
 	}
 
-	return result[depth..result.length-depth];
+	result = result[depth..result.length-depth];
+
+	// remove all double spaces
+	while (result.canFind("  "d))
+	{
+		result = result.replace("  "d, " "d);
+	}
+
+	// remove trailing and tailing spaces
+	result = result.strip();
+
+	return result;
+}
+
+unittest {
+	string formula = "AxEyAzEw(P(s(x)) > (P(y)&P(w) > !P(s(z)))))";
+	dstring skolemized = toFormulaString(skolemizeFormula(formula));
+	assert(skolemized == "not P(s(v0)) or not P(f0(v0)) or not P(f1(v0, v2)) or not P(s(v2))");
 }
