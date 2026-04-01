@@ -112,24 +112,34 @@ private class Lexer {
                 tok = newToken(TokenType.EOF, "");
                 break;
             case '&':
+            case '∧':
                 tok = newToken(TokenType.CONJUNCTION, "&");
                 break;
             case '|':
+            case '∨':
                 tok = newToken(TokenType.DISJUNCTION, "|");
                 break;
             case '>':
+            case '→':
+            case '⟶':
                 tok = newToken(TokenType.IMPLICATION, ">");
                 break;
             case '=':
+            case '↔':
+            case '⟷':
                 tok = newToken(TokenType.BICONDITIONAL, "=");
                 break;
             case '!':
+            case '¬':
+            case '~':
                 tok = newToken(TokenType.NEGATION, "!");
                 break;
             case '(':
+            case '[':
                 tok = newToken(TokenType.LPAREN, "(");
                 break;
             case ')':
+            case ']':
                 tok = newToken(TokenType.RPAREN, ")");
                 break;
             case ',':
@@ -141,10 +151,10 @@ private class Lexer {
                     dstring literal = result[0];
                     TokenType tt = result[1];
                     return newToken(tt, literal);
-                } else if (ch == 'E' || ch == 'A') {
+                } else if (ch == '∃' || ch == '∀') {
                     dchar quantifier = ch;
                     dstring literal = readQuantifierIdentifier();
-                    TokenType tt = quantifier == 'E' ? TokenType.EXISTENTIAL : TokenType.UNIVERSAL;
+                    TokenType tt = quantifier == '∃' ? TokenType.EXISTENTIAL : TokenType.UNIVERSAL;
                     return newToken(tt, literal);
                 } else if (isUppercaseLetter(ch)) {
                     dstring literal = readPredicate();
@@ -172,7 +182,7 @@ private class Lexer {
 }
 
 unittest {
-    Lexer lexer = new Lexer("Ax (P(x) > Ey Q(y))");
+    Lexer lexer = new Lexer("∀x (P(x) > ∃y Q(y))");
     auto tokens = lexer.tokenize();
     assert(tokens[0].tt == TokenType.UNIVERSAL && tokens[0].literal == "x");
     assert(tokens[1].tt == TokenType.LPAREN && tokens[1].literal == "(");
