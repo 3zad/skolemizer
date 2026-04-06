@@ -70,4 +70,6 @@ unittest {
     clauses = toDisjunctForm(skolem);
 
     writeln(toSetString(clauses));
+
+    writeln(DPLL(clauses));
 }

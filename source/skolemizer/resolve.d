@@ -6,12 +6,43 @@ import skolemizer.skolemize;
 
 import std.stdio;
 import std.format;
+import std.sumtype;
+
+// result sumtype
+
+enum DPLLResult { Satisfiable = "Satisfiable", Unsatisfiable = "Unsatisfiable", Unknown = "Unknown" }
+
 
 // https://en.wikipedia.org/wiki/DPLL_algorithm
-bool DPLL(ASTNode*[hash_t][hash_t] clauses)
+DPLLResult DPLL(ASTNode*[hash_t][hash_t] clauses)
 {
-    return false; // TODO
+    int numTries = 0;
+    while (true) {
+        if (numTries > 1_000) {
+            return DPLLResult.Unknown;
+        }
+
+        // look for unit clauses
+        foreach (key, clause; clauses) {
+            if (clause.length == 1) {
+                // found a unit clause, assign the variable and simplify
+                auto unit = *clause.values[0];
+                writeln("Found unit clause: " ~ toFormulaString(&unit));
+            }
+        }
+
+        foreach (key, clause; clauses) {
+            if (clause.length == 0) {
+                return DPLLResult.Unsatisfiable;
+            }
+        }
+
+        numTries++;
+    }
+    return DPLLResult.Satisfiable;
 }
+
+
 
 
 
