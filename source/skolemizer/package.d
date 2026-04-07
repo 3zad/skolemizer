@@ -71,9 +71,5 @@ unittest {
 
     writeln(toSetString(clauses));
 
-    foreach (var; getVariables(clauses)) {
-        writeln("Clause: " ~ toFormulaString(var));
-    }
-
-    //writeln(DPLL(clauses));
+    writeln(naiveSAT(clauses));
 }

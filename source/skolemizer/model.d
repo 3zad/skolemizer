@@ -49,11 +49,38 @@ public struct ASTNode {
 
 public hash_t hashOfASTNode(const ASTNode* node) {
     if (node is null) return 0;
-    return cast(hash_t)cast(size_t)node;
+
+    hash_t h = 0;
+
+    h ^= node.type.hashOf();
+
+    h ^= node.value.hashOf();
+
+    h ^= hashOfASTNode(node.left);
+    h ^= hashOfASTNode(node.right);
+
+    foreach (arg; node.args) {
+        h ^= hashOfASTNode(arg);
+    }
+
+    return h;
 }
 
 public bool opEqualsASTNode(const ASTNode* a, const ASTNode* b) {
-    return a is b;
+    if (a is null || b is null) return a is b;
+
+    if (a.type != b.type) return false;
+    if (a.value != b.value) return false;
+
+    if (!opEqualsASTNode(a.left, b.left)) return false;
+    if (!opEqualsASTNode(a.right, b.right)) return false;
+
+    if (a.args.length != b.args.length) return false;
+    foreach (i; 0 .. a.args.length) {
+        if (!opEqualsASTNode(a.args[i], b.args[i])) return false;
+    }
+
+    return true;
 }
 
 public ASTNode* cloneAST(const ASTNode* node) {
@@ -64,4 +91,32 @@ public ASTNode* cloneAST(const ASTNode* node) {
     copy.right = cloneAST(node.right);
     copy.args = node.args.map!(arg => cloneAST(arg)).array;
     return copy;
+}
+
+unittest
+{
+    // check the correctness of hashOfASTNode and opEqualsASTNode
+    auto node1 = new ASTNode(NodeType.Variable, "x");
+    auto node2 = new ASTNode(NodeType.Variable, "x");
+    auto node3 = new ASTNode(NodeType.Variable, "y");
+    assert(opEqualsASTNode(node1, node2));
+    assert(!opEqualsASTNode(node1, node3));
+    assert(hashOfASTNode(node1) == hashOfASTNode(node2));
+    assert(hashOfASTNode(node1) != hashOfASTNode(node3));
+
+    auto node4 = new ASTNode(NodeType.Conjunction, "", node1, node3);
+    auto node5 = new ASTNode(NodeType.Conjunction, "", node2, node3);
+    assert(opEqualsASTNode(node4, node5));
+    assert(hashOfASTNode(node4) == hashOfASTNode(node5));
+
+    auto node6 = new ASTNode(NodeType.Conjunction, "", node1, node1);
+    assert(!opEqualsASTNode(node4, node6));
+    assert(hashOfASTNode(node4) != hashOfASTNode(node6));
+
+    auto node7 = new ASTNode(NodeType.Predicate, "P");
+    node7.args ~= node1;
+    auto node8 = new ASTNode(NodeType.Predicate, "P");
+    node8.args ~= node2;
+    assert(opEqualsASTNode(node7, node8));
+    assert(hashOfASTNode(node7) == hashOfASTNode(node8));
 }

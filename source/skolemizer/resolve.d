@@ -42,6 +42,67 @@ DPLLResult DPLL(ASTNode*[hash_t][hash_t] clauses)
     return DPLLResult.Satisfiable;
 }
 
+public DPLLResult naiveSAT(ASTNode*[hash_t][hash_t] clauses)
+{
+    ASTNode*[] variables = getVariables(clauses);
+    bool[] assignment = new bool[variables.length];
+    assignment[0..$] = false;
+    bool allSatisfied;
+    do {
+        allSatisfied = false;
+        foreach (key, clause; clauses) {
+            bool clauseSatisfied = false;
+            foreach (key2, clause2; clause) {
+                clauseSatisfied = clauseSatisfied || evaluateVariable(clause2, variables, assignment);
+            }
+            if (!clauseSatisfied) {
+                allSatisfied = false;
+                break;
+            } else {
+                allSatisfied = true;
+            }
+        }
+    } while (increment(assignment));
+    return allSatisfied ? DPLLResult.Satisfiable : DPLLResult.Unsatisfiable;
+}
+
+private bool evaluateVariable(ASTNode* clause, ASTNode*[] variables, bool[] assignment)
+{
+    if (variables.length != assignment.length) {
+        throw new Exception("Variables and assignment length mismatch");
+    }
+
+    if (clause.type == NodeType.Variable) {
+        for (size_t i = 0; i < variables.length; ++i) {
+            if (opEqualsASTNode(clause, variables[i])) {
+                return assignment[i];
+            }
+        }
+        throw new Exception("Variable not found in assignment");
+    } else if (clause.type == NodeType.Negation) {
+        return !evaluateVariable(clause.left, variables, assignment);
+    } else if (clause.type == NodeType.Disjunction) {
+        return evaluateVariable(clause.left, variables, assignment) || evaluateVariable(clause.right, variables, assignment);
+    } else {
+        throw new Exception("Unsupported clause type: " ~ cast(string)(clause.type));
+    }
+}
+
+// Helper which increments a boolean array as if it were a binary number
+private bool increment(bool[] bits) {
+    for (ulong i = bits.length - 1; i >= 0; --i) {
+        if (i >= bits.length) {
+            return false;
+        }
+        if (!bits[i]) {
+            bits[i] = true;
+            return true;
+        }
+        bits[i] = false;
+    }
+    return false;
+}
+
 public ASTNode*[] getVariables(ASTNode*[hash_t][hash_t] clauses)
 {
     ASTNode*[size_t] hashSet;
@@ -70,12 +131,8 @@ public ASTNode*[] getVariables(ASTNode*[hash_t][hash_t] clauses)
 public ASTNode*[hash_t][hash_t] toDisjunctForm(ASTNode* node)
 {
     node = skolemizeNode(node);
-    writeToFile("skolemized.txt", node);
     node = distribute(node);
-    writeToFile("distributed.txt", node);
     
-    writeln("Distributed: " ~ toFormulaString(node));
-
     // hashset workaround using an associative array
     ASTNode*[hash_t] clauses;
     splitOnConj(node, clauses);
