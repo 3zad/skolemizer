@@ -10,6 +10,14 @@ public import skolemizer.parser;
 public import skolemizer.skolemize;
 public import skolemizer.model;
 public import skolemizer.token;
+public import skolemizer.resolve;
+
+/// is formula satisfiable. Only works for propositional logic.
+public DPLLResult isSatisfiable(string formula) {
+    auto skolemized = skolemizeFormula(formula);
+    auto clauses = toDisjunctForm(skolemized);
+    return naiveSAT(clauses);
+}
 
 /// Skolemize a formula given as a string
 public ASTNode* parseFormula(string input) {
