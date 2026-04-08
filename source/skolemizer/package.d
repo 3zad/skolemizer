@@ -56,4 +56,8 @@ unittest {
 	formula = "∀x((P(x) → R(x)) & (R(x) → P(x)))";
 	skolemized = toFormulaString(skolemizeFormula(formula));
 	assert(skolemized.replace(" "d, ""d) == "¬P(v0) ∨ R(v0) & ¬R(v0) ∨ P(v0)"d.replace(" "d, ""d));
+
+    formula = "¬((a&b⟶c)⟶(a&c⟶d)⟶(b&d⟶e)⟶a&b⟶e)";
+    skolemized = toFormulaString(skolemizeFormula(formula));
+    writeln(skolemized);
 }

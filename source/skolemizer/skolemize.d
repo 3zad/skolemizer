@@ -79,12 +79,14 @@ public ASTNode* negationsInward(ASTNode* node)
             node.type  = NodeType.Disjunction;
             node.left  = leftNegation;
             node.right = rightNegation;
+            return negationsInward(node);
         } else if (node.left.type == NodeType.Disjunction) {
             ASTNode* leftNegation  = new ASTNode(NodeType.Negation, ""d, node.left.left, null);
             ASTNode* rightNegation = new ASTNode(NodeType.Negation, ""d, node.left.right, null);
             node.type  = NodeType.Conjunction;
             node.left  = leftNegation;
             node.right = rightNegation;
+            return negationsInward(node);
         }
     }
 
