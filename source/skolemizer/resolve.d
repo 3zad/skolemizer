@@ -206,7 +206,7 @@ public ASTNode*[hash_t][hash_t] toDisjunctForm(ASTNode* node)
     return disjunctClauses;
 }
 
-ASTNode* distribute(ASTNode* node) {
+public ASTNode* distribute(ASTNode* node) {
     if (node is null) return null;
 
     if (node.type == NodeType.Conjunction) {

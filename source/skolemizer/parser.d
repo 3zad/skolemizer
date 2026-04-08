@@ -198,16 +198,20 @@ dstring toFormulaString(ASTNode* node, dstring result = "")
 		result ~= toFormulaString(node.right);
 		result ~= ")";
 	} else {
+        bool leftOnly = false;
 		switch (node.type)
 		{
 			case NodeType.Negation:
 				result ~= " ¬"d;
+                leftOnly = true;
 				break;
 			case NodeType.Universal:
 				result ~= "∀"d~node.value;
+                leftOnly = true;
 				break;
 			case NodeType.Existential:
 				result ~= "∃"d~node.value;
+                leftOnly = true;
 				break;
 			case NodeType.Variable:
 				result ~= node.value;
@@ -247,8 +251,10 @@ dstring toFormulaString(ASTNode* node, dstring result = "")
 			default:
 				break;
 		}
-		result ~= toFormulaString(node.left);
-		result ~= toFormulaString(node.right);
+        result ~= toFormulaString(node.left);
+		if (!leftOnly) {
+			result ~= toFormulaString(node.right);
+		}
 	}
 
 	if (result.length < 2) {
