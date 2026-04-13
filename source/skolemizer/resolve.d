@@ -10,36 +10,197 @@ import std.sumtype;
 
 // result sumtype
 
-enum DPLLResult { Satisfiable = "Satisfiable", Unsatisfiable = "Unsatisfiable", Unknown = "Unknown" }
+enum SatResult { Satisfiable = "Satisfiable", Unsatisfiable = "Unsatisfiable", Unknown = "Unknown" }
 
 
-// https://en.wikipedia.org/wiki/DPLL_algorithm
-DPLLResult DPLL(ASTNode*[hash_t][hash_t] clauses)
+SatResult SLDResolve(ASTNode*[hash_t][hash_t] clauses)
 {
-    int numTries = 0;
-    while (true) {
-        if (numTries > 1_000) {
-            return DPLLResult.Unknown;
-        }
-
-        // look for unit clauses
-        foreach (key, clause; clauses) {
-            if (clause.length == 1) {
-                // found a unit clause, assign the variable and simplify
-                auto unit = *clause.values[0];
-                writeln("Found unit clause: " ~ toFormulaString(&unit));
-            }
-        }
-
-        foreach (key, clause; clauses) {
-            if (clause.length == 0) {
-                return DPLLResult.Unsatisfiable;
-            }
-        }
-
-        numTries++;
+    if (!checkHornClause(clauses)) {
+        throw new Exception("Clauses must be in Horn form for SLD resolution");
     }
-    return DPLLResult.Satisfiable;
+
+    ASTNode*[hash_t][hash_t] facts;
+    ASTNode*[hash_t][hash_t] rules;
+    ASTNode*[hash_t][hash_t] goals;
+    
+    foreach (key, clause; clauses) {
+        if (isFactClause(clause)) {
+            facts[key] = clause;
+        } else if (isRuleClause(clause)) {
+            rules[key] = clause;
+        } else if (isGoalClause(clause)) {
+            goals[key] = clause;
+        } else {
+            throw new Exception("Clause is not a fact, rule, or goal: " ~ cast(string) toSetString(clause));
+        }
+    }
+
+    foreach (goalKey, initialGoal; goals) {
+        ASTNode*[hash_t] positiveGoal;
+        foreach (k, node; initialGoal) {
+            if (node.type == NodeType.Negation) {
+                auto inner = node.left;
+                positiveGoal[hashOfASTNode(inner)] = inner;
+            }
+        }
+        if (dfsSolve(positiveGoal, facts, rules)) {
+            return SatResult.Unsatisfiable;
+        }
+    }
+    return SatResult.Satisfiable;
+}
+
+bool dfsSolve(ASTNode*[hash_t] currentGoal, 
+              ASTNode*[hash_t][hash_t] facts, 
+              ASTNode*[hash_t][hash_t] rules) 
+{
+    if (currentGoal.length == 0) return true;
+
+    auto targetLiteral = currentGoal.keys[0]; 
+
+    foreach (fKey, fact; facts) {
+        if (matches(fact, targetLiteral)) {
+            auto nextGoal = copyGoal(currentGoal);
+            nextGoal.remove(targetLiteral); // resolved
+            if (dfsSolve(nextGoal, facts, rules)) return true;
+        }
+    }
+
+    foreach (rKey, rule; rules) {
+        if (matchesHead(rule, targetLiteral)) {
+            auto nextGoal = copyGoal(currentGoal);
+            nextGoal.remove(targetLiteral);
+            
+            foreach (lit; getBody(rule)) {
+                auto inner = lit.left;
+                nextGoal[hashOfASTNode(inner)] = inner;
+            }
+            
+            if (dfsSolve(nextGoal, facts, rules)) return true;
+        }
+    }
+
+    return false;
+}
+
+bool matches(ASTNode*[hash_t] fact, hash_t targetLiteralHash) {
+    foreach (node; fact) {
+        if (isPositiveLiteral(node)) {
+            return hashOfASTNode(node) == targetLiteralHash;
+        }
+    }
+    return false;
+}
+
+bool matchesHead(ASTNode*[hash_t] rule, hash_t targetLiteralHash) {
+    foreach (node; rule) {
+        if (isPositiveLiteral(node)) {
+            return hashOfASTNode(node) == targetLiteralHash;
+        }
+    }
+    return false;
+}
+
+ASTNode*[] getBody(ASTNode*[hash_t] rule) {
+    ASTNode*[] bodyNodes;
+    foreach (node; rule) {
+        if (isNegativeLiteral(node)) {
+            bodyNodes ~= node;
+        }
+    }
+    return bodyNodes;
+}
+
+ASTNode*[hash_t] copyGoal(ASTNode*[hash_t] goal) {
+    ASTNode*[hash_t] newGoal;
+    foreach (k, v; goal) {
+        newGoal[k] = v;
+    }
+    return newGoal;
+}
+
+// public ASTNode*[hash_t][hash_t] tryHornConvert(ASTNode* node)
+
+// if a set of clauses isn't in horn form, loop through every clause and negate every literal until it is or until we've tried everything.
+public ASTNode*[hash_t][hash_t] tryHornConvert(ASTNode*[hash_t][hash_t] clauses)
+{
+    if (checkHornClause(clauses)) {
+        return clauses;
+    }
+
+    ASTNode*[hash_t][hash_t] modifiedClauses = clauses.dup;
+    foreach (key, clause; modifiedClauses) {
+        foreach (key2, literal; clause) {
+            if (literal.type == NodeType.Variable) {
+                clause[key2] = new ASTNode(NodeType.Negation, null, literal);
+            } else if (literal.type == NodeType.Negation) {
+                clause[key2] = literal.left;
+            }
+        }
+        if (checkHornClause(modifiedClauses)) {
+            return modifiedClauses;
+        }
+    }
+
+    throw new Exception("Unable to convert clauses to Horn form");
+}
+
+public bool isFactClause(ASTNode*[hash_t] clause)
+{
+    int numPositiveLiterals = 0;
+    int numNegativeLiterals = 0;
+    foreach (key, disjunct; clause) {
+        if (disjunct.type == NodeType.Variable) {
+            numPositiveLiterals++;
+        } else if (disjunct.type == NodeType.Negation) {
+            numNegativeLiterals++;
+        } else {
+            throw new Exception("Unsupported node type in disjunct: " ~ cast(string)(disjunct.type));
+        }
+    }
+    return numPositiveLiterals == 1 && numNegativeLiterals == 0;
+}
+
+public bool isRuleClause(ASTNode*[hash_t] clause)
+{
+    int numPositiveLiterals = 0;
+    int numNegativeLiterals = 0;
+    foreach (key, disjunct; clause) {
+        if (disjunct.type == NodeType.Variable) {
+            numPositiveLiterals++;
+        } else if (disjunct.type == NodeType.Negation) {
+            numNegativeLiterals++;
+        } else {
+            throw new Exception("Unsupported node type in disjunct: " ~ cast(string)(disjunct.type));
+        }
+    }
+    return numPositiveLiterals == 1 && numNegativeLiterals > 0;
+}
+
+public bool isGoalClause(ASTNode*[hash_t] clause)
+{
+    int numPositiveLiterals = 0;
+    int numNegativeLiterals = 0;
+    foreach (key, disjunct; clause) {
+        if (disjunct.type == NodeType.Variable) {
+            numPositiveLiterals++;
+        } else if (disjunct.type == NodeType.Negation) {
+            numNegativeLiterals++;
+        } else {
+            throw new Exception("Unsupported node type in disjunct: " ~ cast(string)(disjunct.type));
+        }
+    }
+    return numPositiveLiterals == 0 && numNegativeLiterals > 0;
+}
+
+public bool isPositiveLiteral(ASTNode* node)
+{
+    return node.type == NodeType.Variable;
+}
+
+public bool isNegativeLiteral(ASTNode* node)
+{
+    return node.type == NodeType.Negation && node.left.type == NodeType.Variable;
 }
 
 public bool checkHornClause(ASTNode* clause)
@@ -65,6 +226,27 @@ public bool checkHornClause(ASTNode* clause)
     return true;
 }
 
+public bool checkHornClause(ASTNode*[hash_t][hash_t] clauses)
+{
+    foreach (key, disjuncts; clauses) {
+        int numPositiveLiterals = 0;
+        foreach (variable, disjunct; disjuncts) {
+            if (disjunct.type == NodeType.Variable) {
+                numPositiveLiterals++;
+            } else if (disjunct.type == NodeType.Negation) {
+                // explicicity
+            } else {
+                throw new Exception("Unsupported node type in disjunct: " ~ cast(string)(disjunct.type));
+            }
+        }
+        if (numPositiveLiterals > 1) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Ditto
 public bool checkHornClause(string formula)
 {
@@ -72,7 +254,7 @@ public bool checkHornClause(string formula)
     return checkHornClause(ast);
 }
 
-public DPLLResult naiveSAT(ASTNode*[hash_t][hash_t] clauses)
+public SatResult naiveSAT(ASTNode*[hash_t][hash_t] clauses)
 {
     ASTNode*[] variables = getVariables(clauses);
     bool[] assignment = new bool[variables.length];
@@ -92,8 +274,9 @@ public DPLLResult naiveSAT(ASTNode*[hash_t][hash_t] clauses)
                 allSatisfied = true;
             }
         }
+        if (allSatisfied) return SatResult.Satisfiable;
     } while (increment(assignment));
-    return allSatisfied ? DPLLResult.Satisfiable : DPLLResult.Unsatisfiable;
+    return SatResult.Unsatisfiable;
 }
 
 unittest {
@@ -105,37 +288,37 @@ unittest {
 	auto skolem = skolemizeNode(ast);
     auto clauses = toDisjunctForm(skolem);
 
-    assert(naiveSAT(clauses) == DPLLResult.Unsatisfiable);
+    assert(naiveSAT(clauses) == SatResult.Unsatisfiable);
 
     tokens = tokenize("a | !a");
     ast = parse(tokens);
     skolem = skolemizeNode(ast);
     clauses = toDisjunctForm(skolem);
-    assert(naiveSAT(clauses) == DPLLResult.Satisfiable);
+    assert(naiveSAT(clauses) == SatResult.Satisfiable);
 
     tokens = tokenize("(a ∨ b) ∧ (¬a ∨ b) ∧ (a ∨ ¬b) ∧ (¬a ∨ ¬b)");
     ast = parse(tokens);
     skolem = skolemizeNode(ast);
     clauses = toDisjunctForm(skolem);
-    assert(naiveSAT(clauses) == DPLLResult.Unsatisfiable);
+    assert(naiveSAT(clauses) == SatResult.Unsatisfiable);
 
     tokens = tokenize("a ⟶ b ⟶ a");
     ast = parse(tokens);
     skolem = skolemizeNode(ast);
     clauses = toDisjunctForm(skolem);
-    assert(naiveSAT(clauses) == DPLLResult.Satisfiable);
+    assert(naiveSAT(clauses) == SatResult.Satisfiable);
 
     tokens = tokenize("¬(a | ¬a)");
     ast = parse(tokens);
     skolem = skolemizeNode(ast);
     clauses = toDisjunctForm(skolem);
-    assert(naiveSAT(clauses) == DPLLResult.Unsatisfiable);
+    assert(naiveSAT(clauses) == SatResult.Unsatisfiable);
 
     tokens = tokenize("a ⟷ ¬a");
     ast = parse(tokens);
     skolem = skolemizeNode(ast);
     clauses = toDisjunctForm(skolem);
-    assert(naiveSAT(clauses) == DPLLResult.Unsatisfiable);
+    assert(naiveSAT(clauses) == SatResult.Unsatisfiable);
 
     tokens = tokenize("((a ∨ ¬a) ∧ (b ∨ ¬b) ∧ (c ∨ ¬c) ∧ (d ∨ ¬d))
                         ∧ ((a ∨ b ∨ ¬a ∨ ¬b) ∧ (c ∨ d ∨ ¬c ∨ ¬d))
@@ -146,7 +329,7 @@ unittest {
     ast = parse(tokens);
     skolem = skolemizeNode(ast);
     clauses = toDisjunctForm(skolem);
-    assert(naiveSAT(clauses) == DPLLResult.Satisfiable);
+    assert(naiveSAT(clauses) == SatResult.Satisfiable);
 
     tokens = tokenize("((a ∧ ¬a) ∨ (b ∧ ¬b))
                         ∧ ((c ∧ ¬c) ∨ (d ∧ ¬d))
@@ -154,7 +337,7 @@ unittest {
     ast = parse(tokens);
     skolem = skolemizeNode(ast);
     clauses = toDisjunctForm(skolem);
-    assert(naiveSAT(clauses) == DPLLResult.Unsatisfiable);
+    assert(naiveSAT(clauses) == SatResult.Unsatisfiable);
 }
 
 private bool evaluateVariable(ASTNode* clause, ASTNode*[] variables, bool[] assignment)
@@ -324,6 +507,21 @@ dstring toSetString(ASTNode*[hash_t][hash_t] set)
 	}
 	result ~= "}";
 	return result;
+}
+
+dstring toSetString(ASTNode*[hash_t] set)
+{
+    dstring result;
+    result ~= "{\n";
+    foreach (key, value; set) {
+        result ~= "\t" ~ toFormulaString(value) ~ ",\n";
+    }
+    // remove trailing comma and newline
+    if (result.length >= 2) {
+        result = result[0 .. $ - 2];
+    }
+    result ~= "\n}";
+    return result;
 }
 
 unittest

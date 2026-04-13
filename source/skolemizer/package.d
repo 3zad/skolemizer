@@ -13,7 +13,7 @@ public import skolemizer.token;
 public import skolemizer.resolve;
 
 /// is formula satisfiable. Only works for propositional logic.
-public DPLLResult isSatisfiable(string formula) {
+public SatResult isSatisfiable(string formula) {
     auto skolemized = skolemizeFormula(formula);
     auto clauses = toDisjunctForm(skolemized);
     return naiveSAT(clauses);
@@ -51,9 +51,35 @@ unittest {
 	skolemized = toFormulaString(skolemizeFormula(formula));
 	assert(skolemized.replace(" "d, ""d) == "¬P(v0) ∨ R(v0) & ¬R(v0) ∨ P(v0)"d.replace(" "d, ""d));
 
+    formula = "(a|b) & (¬a|b)";
+    assert(checkHornClause(parseFormula(formula)) == false);
+
     formula = "¬((a&b⟶c)⟶(a&c⟶d)⟶(b&d⟶e)⟶a&b⟶e)";
     assert(checkHornClause(parseFormula(formula)) == true);
 
-    formula = "(a|b) & (¬a|b)";
-    assert(checkHornClause(parseFormula(formula)) == false);
+    formula = "a & !a";
+    auto cnf = toDisjunctForm(parseFormula(formula));
+    assert(SLDResolve(cnf) == SatResult.Unsatisfiable);
+    assert(naiveSAT(cnf) == SatResult.Unsatisfiable);
+
+    formula = "a";
+    cnf = toDisjunctForm(parseFormula(formula));
+    assert(SLDResolve(cnf) == SatResult.Satisfiable);
+    assert(naiveSAT(cnf) == SatResult.Satisfiable);
+
+    formula = "a & b";
+    cnf = toDisjunctForm(parseFormula(formula));
+    assert(SLDResolve(cnf) == SatResult.Satisfiable);
+    assert(naiveSAT(cnf) == SatResult.Satisfiable);
+
+    formula = "!a | !b";
+    cnf = toDisjunctForm(parseFormula(formula));
+    assert(SLDResolve(cnf) == SatResult.Satisfiable);
+    assert(naiveSAT(cnf) == SatResult.Satisfiable);
+
+    formula = "a | b";
+    cnf = toDisjunctForm(parseFormula(formula));
+    cnf = tryHornConvert(cnf);
+    assert(SLDResolve(cnf) == SatResult.Satisfiable);
+    assert(naiveSAT(cnf) == SatResult.Satisfiable);
 }
