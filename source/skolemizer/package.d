@@ -82,4 +82,16 @@ unittest {
     cnf = tryHornConvert(cnf);
     assert(SLDResolve(cnf) == SatResult.Satisfiable);
     assert(naiveSAT(cnf) == SatResult.Satisfiable);
+
+    formula = "( p | !q | !r ) & ( !p )";
+    cnf = toDisjunctForm(parseFormula(formula));
+    cnf = tryHornConvert(cnf);
+    assert(SLDResolve(cnf) == SatResult.Satisfiable);
+    assert(naiveSAT(cnf) == SatResult.Satisfiable);
+
+    formula = "P(x) & Q(x) & R(x) & !P(x) & !Q(x) & !R(x)";
+    cnf = toDisjunctForm(parseFormula(formula));
+    assert(SLDResolve(cnf) == SatResult.Unsatisfiable);
+    assert(naiveSAT(cnf) == SatResult.Unsatisfiable);
+    
 }

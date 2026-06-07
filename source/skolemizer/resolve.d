@@ -131,7 +131,7 @@ public ASTNode*[hash_t][hash_t] tryHornConvert(ASTNode*[hash_t][hash_t] clauses)
     ASTNode*[hash_t][hash_t] modifiedClauses = clauses.dup;
     foreach (key, clause; modifiedClauses) {
         foreach (key2, literal; clause) {
-            if (literal.type == NodeType.Variable) {
+            if (isPositiveLiteral(literal)) {
                 clause[key2] = new ASTNode(NodeType.Negation, null, literal);
             } else if (literal.type == NodeType.Negation) {
                 clause[key2] = literal.left;
@@ -150,7 +150,7 @@ public bool isFactClause(ASTNode*[hash_t] clause)
     int numPositiveLiterals = 0;
     int numNegativeLiterals = 0;
     foreach (key, disjunct; clause) {
-        if (disjunct.type == NodeType.Variable) {
+        if (isPositiveLiteral(disjunct)) {
             numPositiveLiterals++;
         } else if (disjunct.type == NodeType.Negation) {
             numNegativeLiterals++;
@@ -166,7 +166,7 @@ public bool isRuleClause(ASTNode*[hash_t] clause)
     int numPositiveLiterals = 0;
     int numNegativeLiterals = 0;
     foreach (key, disjunct; clause) {
-        if (disjunct.type == NodeType.Variable) {
+        if (isPositiveLiteral(disjunct)) {
             numPositiveLiterals++;
         } else if (disjunct.type == NodeType.Negation) {
             numNegativeLiterals++;
@@ -182,7 +182,7 @@ public bool isGoalClause(ASTNode*[hash_t] clause)
     int numPositiveLiterals = 0;
     int numNegativeLiterals = 0;
     foreach (key, disjunct; clause) {
-        if (disjunct.type == NodeType.Variable) {
+        if (isPositiveLiteral(disjunct)) {
             numPositiveLiterals++;
         } else if (disjunct.type == NodeType.Negation) {
             numNegativeLiterals++;
@@ -195,12 +195,12 @@ public bool isGoalClause(ASTNode*[hash_t] clause)
 
 public bool isPositiveLiteral(ASTNode* node)
 {
-    return node.type == NodeType.Variable;
+    return node.type == NodeType.Variable || node.type == NodeType.Predicate;
 }
 
 public bool isNegativeLiteral(ASTNode* node)
 {
-    return node.type == NodeType.Negation && node.left.type == NodeType.Variable;
+    return node.type == NodeType.Negation && isPositiveLiteral(node.left);
 }
 
 public bool checkHornClause(ASTNode* clause)
@@ -210,7 +210,7 @@ public bool checkHornClause(ASTNode* clause)
     foreach (key, disjuncts; cnf) {
         int numPositiveLiterals = 0;
         foreach (variable, disjunct; disjuncts) {
-            if (disjunct.type == NodeType.Variable) {
+            if (isPositiveLiteral(disjunct)) {
                 numPositiveLiterals++;
             } else if (disjunct.type == NodeType.Negation) {
                 // explicicity
@@ -231,7 +231,7 @@ public bool checkHornClause(ASTNode*[hash_t][hash_t] clauses)
     foreach (key, disjuncts; clauses) {
         int numPositiveLiterals = 0;
         foreach (variable, disjunct; disjuncts) {
-            if (disjunct.type == NodeType.Variable) {
+            if (isPositiveLiteral(disjunct)) {
                 numPositiveLiterals++;
             } else if (disjunct.type == NodeType.Negation) {
                 // explicicity
@@ -346,13 +346,13 @@ private bool evaluateVariable(ASTNode* clause, ASTNode*[] variables, bool[] assi
         throw new Exception("Variables and assignment length mismatch");
     }
 
-    if (clause.type == NodeType.Variable) {
+    if (isPositiveLiteral(clause)) {
         for (size_t i = 0; i < variables.length; ++i) {
             if (opEqualsASTNode(clause, variables[i])) {
                 return assignment[i];
             }
         }
-        throw new Exception("Variable not found in assignment");
+        throw new Exception("Variable/predicate not found in assignment");
     } else if (clause.type == NodeType.Negation) {
         return !evaluateVariable(clause.left, variables, assignment);
     } else if (clause.type == NodeType.Disjunction) {
@@ -383,7 +383,7 @@ public ASTNode*[] getVariables(ASTNode*[hash_t][hash_t] clauses)
     foreach (key, clause; clauses) {
         foreach (key2, clause2; clause)
         {
-            if (clause2.type == NodeType.Variable) {
+            if (isPositiveLiteral(clause2)) {
                 hashSet[hashOfASTNode(clause2)] = clause2;
             } else if (clause2.type == NodeType.Negation)
             {
