@@ -14,8 +14,9 @@ public enum NodeType
     Disjunction = "Disjunction", 
     Implication = "Implication", 
     Biconditional = "Biconditional", 
-    Variable = "Variable", 
-    Predicate = "Predicate", 
+    Variable = "Variable",
+    Constant = "Constant",
+    Predicate = "Predicate",
     Function = "Function", 
     SkolemFunction = "SkolemFunction" 
 }

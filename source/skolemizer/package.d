@@ -88,7 +88,7 @@ unittest {
     cnf = tryHornConvert(cnf);
     assert(SLDResolve(cnf) == SatResult.Satisfiable);
     assert(naiveSAT(cnf) == SatResult.Satisfiable);
-
+    
     formula = "P(x) & Q(x) & R(x) & !P(x) & !Q(x) & !R(x)";
     cnf = toDisjunctForm(parseFormula(formula));
     assert(SLDResolve(cnf) == SatResult.Unsatisfiable);

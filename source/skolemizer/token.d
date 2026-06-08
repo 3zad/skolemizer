@@ -16,6 +16,7 @@ public enum TokenType {
     VARIABLE = "VARIABLE",
     PREDICATE = "PREDICATE",
     FUNCTION = "FUNCTION",
+    CONSTANT = "CONSTANT",
 
     LPAREN = "LPAREN",
     RPAREN = "RPAREN",

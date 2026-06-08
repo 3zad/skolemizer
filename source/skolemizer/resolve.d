@@ -7,6 +7,8 @@ import skolemizer.skolemize;
 import std.stdio;
 import std.format;
 import std.sumtype;
+import std.algorithm;
+import std.array;
 
 // result sumtype
 

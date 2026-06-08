@@ -191,18 +191,17 @@ public ASTNode* eliminateExistentialQuantifiers(ASTNode* node)
         } else {
             dstring skolemFuncName = format("f%d", i++).toUTF32();
             ASTNode* possibleSkolemFunc = new ASTNode(NodeType.SkolemFunction, skolemFuncName, null, null);
-            ASTNode* args;
             if (uqList.length > 0) {
                 foreach (uq; uqList) {
                     possibleSkolemFunc.args ~= new ASTNode(NodeType.Variable, uq.value, null, null);
                 }
             } else {
-                // generate fresh constant starting at a0, a1, a2, etc.
+                // generate fresh Skolem constant
                 dstring constantName = format("a%d", i++).toUTF32();
-                possibleSkolemFunc = new ASTNode(NodeType.Variable, constantName, null, null);
+                possibleSkolemFunc = new ASTNode(NodeType.Constant, constantName, null, null);
             }
 
-            replaceSkolemVariable(node.left, node, possibleSkolemFunc);
+            node.left = replaceNode(node.left, node, possibleSkolemFunc);
         }
         node = node.left;
     }
@@ -212,18 +211,23 @@ public ASTNode* eliminateExistentialQuantifiers(ASTNode* node)
     return node;
 }
 
-private void replaceSkolemVariable(ASTNode* node, ASTNode* existentialNode, ASTNode* skolemFunc)
+private ASTNode* replaceNode(ASTNode* node, ASTNode* existentialNode, ASTNode* replacement)
 {
-    if (node is null) return;
+    if (node is null)
+        return null;
 
-    replaceSkolemVariable(node.left, existentialNode, skolemFunc);
-    replaceSkolemVariable(node.right, existentialNode, skolemFunc);
-
-    foreach (ref arg; node.args) {  // ref so we can replace
-        if (arg.type == NodeType.Variable && arg.value == existentialNode.value) {
-            arg = skolemFunc;       // replace the whole node, not just the value
-        } else {
-            replaceSkolemVariable(arg, existentialNode, skolemFunc);
-        }
+    if (node.type == NodeType.Variable &&
+        node.value == existentialNode.value)
+    {
+        return replacement;
     }
+
+    node.left = replaceNode(node.left, existentialNode, replacement);
+    node.right = replaceNode(node.right, existentialNode, replacement);
+
+    foreach (ref arg; node.args) {
+        arg = replaceNode(arg, existentialNode, replacement);
+    }
+
+    return node;
 }
