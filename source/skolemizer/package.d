@@ -105,8 +105,11 @@ unittest {
     assert(naiveSAT(cnf) == SatResult.Unsatisfiable);
 
     formula = "∃a∃b(P(a) & !P(b))";
-    cnf = toDisjunctForm(parseFormula(formula));
-    writeln("CNF: ", toSetString(cnf));
+    cnf = toDisjunctForm(skolemizeFormula(parseFormula(formula)));
     assert(SLDResolve(cnf) == SatResult.Satisfiable);
     assert(naiveSAT(cnf) == SatResult.Satisfiable);
+
+    formula = "!∃x(P(x))";
+    auto skolem = skolemizeFormula(formula);
+    writeln(toFormulaString(skolem));
 }

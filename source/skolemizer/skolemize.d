@@ -56,13 +56,6 @@ public ASTNode* removeBiconditional(ASTNode* node)
     return node;
 }
 
-/*
- * !!A into A
- * !(A&B) into !A | !B
- * !(A|B) into !A & !B
- * TODO: !(For all)x A into (Exists) x !A
- *       !(Exists)x A into (For all) x !A
- */
 public ASTNode* negationsInward(ASTNode* node)
 {
     if (node is null) return null;
@@ -86,6 +79,16 @@ public ASTNode* negationsInward(ASTNode* node)
             node.type  = NodeType.Conjunction;
             node.left  = leftNegation;
             node.right = rightNegation;
+            return negationsInward(node);
+        } else if (node.left.type == NodeType.Existential) {
+            node.type  = NodeType.Universal;
+            node.value = node.left.value;
+            node.left  = new ASTNode(NodeType.Negation, ""d, node.left.left, null);
+            return negationsInward(node);
+        } else if (node.left.type == NodeType.Universal) {
+            node.type  = NodeType.Existential;
+            node.value = node.left.value;
+            node.left  = new ASTNode(NodeType.Negation, ""d, node.left.left, null);
             return negationsInward(node);
         }
     }
