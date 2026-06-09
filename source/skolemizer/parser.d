@@ -217,6 +217,9 @@ dstring toFormulaString(ASTNode* node, dstring result = "")
 			case NodeType.Variable:
 				result ~= node.value;
 				break;
+            case NodeType.Constant:
+                result ~= node.value;
+                break;
 			case NodeType.Predicate:
 				dstring argsStr;
 				foreach (arg; node.args) {

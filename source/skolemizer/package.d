@@ -93,5 +93,20 @@ unittest {
     cnf = toDisjunctForm(parseFormula(formula));
     assert(SLDResolve(cnf) == SatResult.Unsatisfiable);
     assert(naiveSAT(cnf) == SatResult.Unsatisfiable);
-    
+
+    formula = "P(x) & Q(x) & R(x) & !P(x) & !Q(x) & !R(y)";
+    cnf = toDisjunctForm(parseFormula(formula));
+    assert(SLDResolve(cnf) == SatResult.Unsatisfiable);
+    assert(naiveSAT(cnf) == SatResult.Unsatisfiable);
+
+    formula = "P(x) & Q(x) & R(x) & P(x) & !Q(x) & !R(y)";
+    cnf = toDisjunctForm(parseFormula(formula));
+    assert(SLDResolve(cnf) == SatResult.Unsatisfiable);
+    assert(naiveSAT(cnf) == SatResult.Unsatisfiable);
+
+    formula = "∃a∃b(P(a) & !P(b))";
+    cnf = toDisjunctForm(parseFormula(formula));
+    writeln("CNF: ", toSetString(cnf));
+    assert(SLDResolve(cnf) == SatResult.Satisfiable);
+    assert(naiveSAT(cnf) == SatResult.Satisfiable);
 }
